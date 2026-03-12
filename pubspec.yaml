@@ -18,6 +18,10 @@ dependencies:
   # State management
   provider: ^6.1.2
   
+  # Firebase
+  firebase_core: ^3.8.0
+  firebase_auth: ^5.3.3
+  
   # Audio playback for Quran recitation
   audioplayers: ^6.1.0
   

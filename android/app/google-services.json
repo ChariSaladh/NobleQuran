@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "433224949951",
+    "project_id": "noblequran-279e6",
+    "storage_bucket": "noblequran-279e6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:433224949951:android:d00227ff8ba051268f660a",
+        "android_client_info": {
+          "package_name": "com.noblequran.noblequran"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbgO4tuXERO44hruK9-5_VXbj1koxr0OE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

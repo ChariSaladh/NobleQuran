@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'providers/quran_provider.dart';
 import 'providers/bookmark_provider.dart';
 import 'providers/theme_provider.dart';
@@ -16,6 +17,9 @@ import 'widgets/mini_player.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  await Firebase.initializeApp();
 
   // Set preferred orientations
   SystemChrome.setPreferredOrientations([

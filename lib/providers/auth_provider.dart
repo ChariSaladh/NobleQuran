@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Authentication state
@@ -9,21 +10,34 @@ enum AuthStatus { initial, authenticated, unauthenticated, guest }
 class User {
   final String email;
   final String name;
+  final String? uid;
   final DateTime createdAt;
 
-  User({required this.email, required this.name, DateTime? createdAt})
+  User({required this.email, required this.name, this.uid, DateTime? createdAt})
     : createdAt = createdAt ?? DateTime.now();
 
   Map<String, dynamic> toJson() => {
     'email': email,
     'name': name,
+    'uid': uid,
     'createdAt': createdAt.toIso8601String(),
   };
 
   factory User.fromJson(Map<String, dynamic> json) => User(
     email: json['email'] as String,
     name: json['name'] as String,
+    uid: json['uid'] as String?,
     createdAt: DateTime.parse(json['createdAt'] as String),
+  );
+
+  /// Create User from Firebase User
+  factory User.fromFirebaseUser(firebaseUser) => User(
+    email: firebaseUser.email ?? '',
+    name:
+        firebaseUser.displayName ??
+        firebaseUser.email?.split('@').first ??
+        'User',
+    uid: firebaseUser.uid,
   );
 }
 
@@ -45,6 +59,8 @@ class AuthProvider extends ChangeNotifier {
   static const String _userKey = 'user_data';
   static const String _authTokenKey = 'auth_token';
 
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+
   AuthProvider() {
     _checkAuthStatus();
   }
@@ -52,14 +68,22 @@ class AuthProvider extends ChangeNotifier {
   /// Check if user is already logged in
   Future<void> _checkAuthStatus() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final userData = prefs.getString(_userKey);
+      final currentUser = _firebaseAuth.currentUser;
 
-      if (userData != null) {
-        _user = User.fromJson(json.decode(userData));
+      if (currentUser != null) {
+        _user = User.fromFirebaseUser(currentUser);
         _status = AuthStatus.authenticated;
       } else {
-        _status = AuthStatus.unauthenticated;
+        // Check local storage for cached user
+        final prefs = await SharedPreferences.getInstance();
+        final userData = prefs.getString(_userKey);
+
+        if (userData != null) {
+          _user = User.fromJson(json.decode(userData));
+          _status = AuthStatus.authenticated;
+        } else {
+          _status = AuthStatus.unauthenticated;
+        }
       }
       notifyListeners();
     } catch (e) {
@@ -80,9 +104,6 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Simulate network delay
-      await Future.delayed(const Duration(seconds: 1));
-
       // Validate inputs
       if (name.isEmpty) {
         _error = 'Please enter your name';
@@ -126,34 +147,39 @@ class AuthProvider extends ChangeNotifier {
         return false;
       }
 
-      // Check if email already exists (simulated)
-      final prefs = await SharedPreferences.getInstance();
-      final existingUser = prefs.getString(_userKey);
-
-      if (existingUser != null) {
-        final existingUserData = User.fromJson(json.decode(existingUser));
-        if (existingUserData.email.toLowerCase() == email.toLowerCase()) {
-          _error = 'An account with this email already exists';
-          _isLoading = false;
-          notifyListeners();
-          return false;
-        }
-      }
-
-      // Create user (in a real app, this would be saved to backend)
-      _user = User(name: name, email: email);
-
-      // Save to local storage
-      await prefs.setString(_userKey, json.encode(_user!.toJson()));
-      await prefs.setString(
-        _authTokenKey,
-        'mock_token_${DateTime.now().millisecondsSinceEpoch}',
+      // Create user with Firebase Auth
+      final credential = await _firebaseAuth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
       );
 
-      _status = AuthStatus.authenticated;
+      // Update display name
+      await credential.user?.updateDisplayName(name);
+
+      // Get updated user info
+      final firebaseUser = _firebaseAuth.currentUser;
+      if (firebaseUser != null) {
+        _user = User.fromFirebaseUser(firebaseUser);
+
+        // Save to local storage
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_userKey, json.encode(_user!.toJson()));
+
+        _status = AuthStatus.authenticated;
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      }
+
+      _error = 'Failed to create account';
       _isLoading = false;
       notifyListeners();
-      return true;
+      return false;
+    } on FirebaseAuthException catch (e) {
+      _error = _getFirebaseErrorMessage(e.code);
+      _isLoading = false;
+      notifyListeners();
+      return false;
     } catch (e) {
       _error = 'An error occurred. Please try again.';
       _isLoading = false;
@@ -169,9 +195,6 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Simulate network delay
-      await Future.delayed(const Duration(seconds: 1));
-
       // Validate inputs
       if (email.isEmpty) {
         _error = 'Please enter your email';
@@ -187,37 +210,19 @@ class AuthProvider extends ChangeNotifier {
         return false;
       }
 
-      // Check credentials (simulated - in real app this would validate against backend)
-      final prefs = await SharedPreferences.getInstance();
-      final userData = prefs.getString(_userKey);
+      // Sign in with Firebase Auth
+      final credential = await _firebaseAuth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
-      if (userData != null) {
-        final user = User.fromJson(json.decode(userData));
+      if (credential.user != null) {
+        _user = User.fromFirebaseUser(credential.user!);
 
-        // For demo purposes, accept any password that matches the email format
-        // In production, this would validate against a backend
-        if (user.email.toLowerCase() == email.toLowerCase()) {
-          _user = user;
-          await prefs.setString(
-            _authTokenKey,
-            'mock_token_${DateTime.now().millisecondsSinceEpoch}',
-          );
-
-          _status = AuthStatus.authenticated;
-          _isLoading = false;
-          notifyListeners();
-          return true;
-        }
-      }
-
-      // For demo: allow sign in with any valid email format
-      if (RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
-        _user = User(name: email.split('@').first, email: email);
+        // Save to local storage
+        final prefs = await SharedPreferences.getInstance();
         await prefs.setString(_userKey, json.encode(_user!.toJson()));
-        await prefs.setString(
-          _authTokenKey,
-          'mock_token_${DateTime.now().millisecondsSinceEpoch}',
-        );
+        await prefs.setString(_authTokenKey, credential.user!.uid);
 
         _status = AuthStatus.authenticated;
         _isLoading = false;
@@ -226,6 +231,11 @@ class AuthProvider extends ChangeNotifier {
       }
 
       _error = 'Invalid email or password';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } on FirebaseAuthException catch (e) {
+      _error = _getFirebaseErrorMessage(e.code);
       _isLoading = false;
       notifyListeners();
       return false;
@@ -244,9 +254,6 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Simulate network delay
-      await Future.delayed(const Duration(seconds: 1));
-
       // Validate email
       if (email.isEmpty) {
         _error = 'Please enter your email';
@@ -262,12 +269,17 @@ class AuthProvider extends ChangeNotifier {
         return false;
       }
 
-      // In a real app, this would send a reset email via backend
-      // For demo, we'll just simulate success
+      // Send password reset email via Firebase
+      await _firebaseAuth.sendPasswordResetEmail(email: email);
 
       _isLoading = false;
       notifyListeners();
       return true;
+    } on FirebaseAuthException catch (e) {
+      _error = _getFirebaseErrorMessage(e.code);
+      _isLoading = false;
+      notifyListeners();
+      return false;
     } catch (e) {
       _error = 'An error occurred. Please try again.';
       _isLoading = false;
@@ -282,6 +294,10 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // Sign out from Firebase
+      await _firebaseAuth.signOut();
+
+      // Clear local storage
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_authTokenKey);
 
@@ -312,5 +328,29 @@ class AuthProvider extends ChangeNotifier {
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  /// Get Firebase error message
+  String _getFirebaseErrorMessage(String code) {
+    switch (code) {
+      case 'user-not-found':
+        return 'No account found with this email';
+      case 'wrong-password':
+        return 'Incorrect password';
+      case 'email-already-in-use':
+        return 'An account with this email already exists';
+      case 'weak-password':
+        return 'Password is too weak';
+      case 'invalid-email':
+        return 'Please enter a valid email';
+      case 'user-disabled':
+        return 'This account has been disabled';
+      case 'too-many-requests':
+        return 'Too many attempts. Please try again later';
+      case 'network-request-failed':
+        return 'Network error. Please check your connection';
+      default:
+        return 'An error occurred. Please try again';
+    }
   }
 }

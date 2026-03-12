@@ -5,6 +5,8 @@ plugins {
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    // Google services plugin for Firebase
+    id("com.google.gms.google-services")
 }
 
 // Load keystore properties
@@ -41,13 +43,6 @@ android {
 
     // Create signing configurations
     signingConfigs {
-        // Debug keystore
-        create("debug") {
-            storeFile = file(System.getProperty("user.home") + "/.android/debug.keystore")
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
-        }
         // Release keystore
         create("release") {
             // Use the release keystore
