@@ -1,0 +1,50 @@
+name: noblequran
+description: "A beautiful Quran application with Arabic recitation and English translation."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  
+  # HTTP client for API calls
+  http: ^1.2.2
+  
+  # State management
+  provider: ^6.1.2
+  
+  # Audio playback for Quran recitation
+  audioplayers: ^6.1.0
+  
+  # Audio service for background playback and notifications
+  audio_service: ^0.18.15
+  rxdart: ^0.28.0
+  
+  # Loading effects
+  shimmer: ^3.0.0
+  
+  # Share functionality
+  share_plus: ^10.1.4
+  
+  # Caching
+  cached_network_image: ^3.4.1
+  
+  # Local storage for bookmarks
+  shared_preferences: ^2.3.3
+  
+  # Just audio for background playback
+  just_audio: ^0.9.42
+  just_audio_background: ^0.0.1-beta.13
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
