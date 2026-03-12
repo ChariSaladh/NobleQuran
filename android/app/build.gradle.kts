@@ -41,6 +41,14 @@ android {
 
     // Create signing configurations
     signingConfigs {
+        // Debug keystore
+        create("debug") {
+            storeFile = file(System.getProperty("user.home") + "/.android/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+        // Release keystore
         create("release") {
             // Use the release keystore
             storeFile = file("release-keystore.jks")
