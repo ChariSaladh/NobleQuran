@@ -12,7 +12,28 @@
           "package_name": "com.noblequran.noblequran"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "433224949951-o30c0uijn27urkl1t46metagboapchja.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.noblequran.noblequran",
+            "certificate_hash": "0bdfc2e02bf470d5cc0ea3fb69ca964398c4d982"
+          }
+        },
+        {
+          "client_id": "433224949951-q14qurri4m6lkagqlr3ar1caa4oupvpe.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.noblequran.noblequran",
+            "certificate_hash": "cedde6be37afb56eb86da5f82de520dba8701328"
+          }
+        },
+        {
+          "client_id": "433224949951-3453b9go0lf609hcuh4sdsliunckoki2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDbgO4tuXERO44hruK9-5_VXbj1koxr0OE"
@@ -20,7 +41,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "433224949951-3453b9go0lf609hcuh4sdsliunckoki2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

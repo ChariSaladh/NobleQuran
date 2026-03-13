@@ -51,7 +51,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
         confirmPassword: _confirmPasswordController.text,
       );
 
-      if (!success && mounted) {
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Account created successfully! Welcome to NobleQuran!',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else if (!success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(authProvider.error ?? 'Sign up failed'),
@@ -389,6 +398,58 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ),
                     );
                   },
+                ),
+                const SizedBox(height: 24),
+                // Google Sign Up button
+                SizedBox(
+                  height: 56,
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final authProvider = context.read<AuthProvider>();
+                      final success = await authProvider.signInWithGoogle();
+
+                      if (success && mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Account created with Google! Welcome to NobleQuran!',
+                            ),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      } else if (!success &&
+                          mounted &&
+                          authProvider.error != null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              authProvider.error ?? 'Sign up failed',
+                            ),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: isDark ? Colors.white : Colors.black87,
+                      side: BorderSide(color: Colors.grey.shade400),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    icon: const Icon(
+                      Icons.g_mobiledata,
+                      size: 28,
+                      color: Colors.blue,
+                    ),
+                    label: const Text(
+                      'Sign up with Google',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 24),
                 // Sign in link

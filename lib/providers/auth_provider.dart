@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Authentication state
@@ -322,6 +323,65 @@ class AuthProvider extends ChangeNotifier {
     _status = AuthStatus.guest;
     _user = null;
     notifyListeners();
+  }
+
+  /// Sign in with Google
+  Future<bool> signInWithGoogle() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      // Trigger the Google Sign In flow
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+
+      if (googleUser == null) {
+        // User cancelled the sign in
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      // Obtain the auth details from the Google Sign In
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      // Create a new credential
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      // Sign in to Firebase with the Google credential
+      final userCredential = await _firebaseAuth.signInWithCredential(
+        credential,
+      );
+
+      if (userCredential.user != null) {
+        _user = User.fromFirebaseUser(userCredential.user!);
+
+        // Save to local storage
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_userKey, json.encode(_user!.toJson()));
+        await prefs.setString(_authTokenKey, userCredential.user!.uid);
+
+        _status = AuthStatus.authenticated;
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      }
+
+      _error = 'Failed to sign in with Google';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _error = 'An error occurred. Please try again.';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
   }
 
   /// Clear error
